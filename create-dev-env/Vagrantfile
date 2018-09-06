@@ -1,0 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  
+  config.vm.box = "ubuntu/xenial64"
+
+  config.vm.define "p4sec-vm" do |node|
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "P4Sec VM" + Time.now.strftime(" %Y-%m-%d")
+    vb.memory = 2048
+    vb.cpus = 2
+  end
+
+  config.vm.synced_folder '.', '/vagrant', disabled: true  
+  config.vm.hostname = "p4sec-vm"
+  config.vm.provision "file", source: "p4.vim", destination: "/home/vagrant/p4.vim"
+  config.vm.provision "shell", path: "root-bootstrap.sh"
+  config.vm.provision "shell", privileged: false, path: "user-bootstrap.sh"
+end
