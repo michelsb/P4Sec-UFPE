@@ -35,6 +35,32 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+header icmp_t {
+    bit<16> typeCode;
+    bit<16> hdrChecksum;
+}
+
+header udp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<16> length_;
+    bit<16> checksum;
+}
+
+header tcp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<32> seqNo;
+    bit<32> ackNo;
+    bit<4>  dataOffset;
+    bit<3>  res;
+    bit<3>  ecn;
+    bit<6>  ctrl;
+    bit<16> window;
+    bit<16> checksum;
+    bit<16> urgentPtr;
+}
+
 struct state_metadata_t {
     bit<4> state;
 }
@@ -46,6 +72,9 @@ struct metadata {
 struct headers {
     ethernet_t   ethernet;
     ipv4_t       ipv4;
+    icmp_t       icmp;
+    udp_t        udp;
+    tcp_t        tcp;
 }
 
 /*************************************************************************
@@ -71,6 +100,26 @@ parser MyParser(packet_in packet,
 
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
+        transition select(hdr.ipv4.protocol) {
+            (4w0x5, 8w0x1): parse_icmp;
+            (4w0x5, 8w0x6): parse_tcp;
+            (4w0x5, 8w0x11): parse_udp;
+            default: accept;
+        }
+    }
+
+    state parse_icmp {
+        packet.extract(hdr.icmp);
+        transition accept;
+    }
+
+    state parse_udp {
+        packet.extract(hdr.udp);
+        transition accept;
+    }
+
+    state parse_tcp {
+        packet.extract(hdr.tcp);
         transition accept;
     }
 
@@ -115,10 +164,42 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
-    table idps_ternary {
+    table idps_icmp_ternary {
         key = {
             hdr.ipv4.srcAddr: ternary;
             hdr.ipv4.dstAddr: ternary;
+        }
+        actions = {
+            mark_as_normal;
+            mark_as_suspicious;
+            NoAction;
+        }
+        size = 1024;
+        default_action = mark_as_normal();
+    }
+
+    table idps_udp_ternary {
+        key = {
+            hdr.ipv4.srcAddr: ternary;
+            hdr.ipv4.dstAddr: ternary;
+            hdr.udp.srcPort:  ternary;
+            hdr.udp.dstPort:  ternary;
+        }
+        actions = {
+            mark_as_normal;
+            mark_as_suspicious;
+            NoAction;
+        }
+        size = 1024;
+        default_action = mark_as_normal();
+    }
+
+    table idps_tcp_ternary {
+        key = {
+            hdr.ipv4.srcAddr: ternary;
+            hdr.ipv4.dstAddr: ternary;
+            hdr.tcp.srcPort:  ternary;
+            hdr.tcp.dstPort:  ternary;
         }
         actions = {
             mark_as_normal;
@@ -144,7 +225,17 @@ control MyIngress(inout headers hdr,
 
     apply {
         if (hdr.ipv4.isValid() && hdr.ipv4.ttl > 0){
-            idps_ternary.apply();
+            if (hdr.icmp.isValid()) {
+                idps_icmp_ternary.apply();
+            } else {
+                if (hdr.udp.isValid()) {
+                    idps_udp_ternary.apply();
+                } else {
+                    if (hdr.tcp.isValid()) {
+                        idps_tcp_ternary.apply();
+                    }
+                }
+            }
             if (meta.state_metadata.state == NORMAL_STATE) {
                 ctr_normal.count(1);
             }
@@ -200,6 +291,9 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.icmp);
+        packet.emit(hdr.udp);
+        packet.emit(hdr.tcp);
     }
 }
 

@@ -6,6 +6,7 @@ import sys
 import commands
 from time import sleep
 
+from util.wildcards import convert_bin_to_value_mask
 import p4runtime_lib.bmv2
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
@@ -59,11 +60,10 @@ class IDPSServerController():
         self.s2.MasterArbitrationUpdate()
         self.s3.MasterArbitrationUpdate()
 
-
     def disconnect(self):
         ShutdownAllSwitchConnections()
 
-    def writeIDPSTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr,dst_ip_mask):
+    def writeIDPSICMPTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask):
         """
         Install table entry on the switch.
 
@@ -75,7 +75,7 @@ class IDPSServerController():
         :param egress_port: the egress port
         """
         table_entry = self.p4info_helper.buildTableEntry(
-            table_name="MyIngress.idps_ternary",
+            table_name="MyIngress.idps_icmp_ternary",
             match_fields={
                 "hdr.ipv4.srcAddr": (src_ip_addr,src_ip_mask),
                 "hdr.ipv4.dstAddr": (dst_ip_addr,dst_ip_mask)
@@ -84,7 +84,57 @@ class IDPSServerController():
             action_params={},
             priority=1)
         sw.WriteTableEntry(table_entry)
-        print "Installed ingress tunnel rule on %s" % sw.name
+        print "Installed malicious ICMP rule on %s" % sw.name
+
+    def writeIDPSUDPTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask, src_port_num, src_port_mask, dst_port_num, dst_port_mask):
+        """
+        Install table entry on the switch.
+
+        :param p4info_helper: the P4Info helper
+        :param sw: the switch connection
+        :param dst_ip_addr: the destination Ethernet address to write in the
+                            egress rule
+        :param dst_eth_addr: the destination IP to match in the ingress rule
+        :param egress_port: the egress port
+        """
+        table_entry = self.p4info_helper.buildTableEntry(
+            table_name="MyIngress.idps_udp_ternary",
+            match_fields={
+                "hdr.ipv4.srcAddr": (src_ip_addr,src_ip_mask),
+                "hdr.ipv4.dstAddr": (dst_ip_addr,dst_ip_mask),
+                "hdr.udp.srcPort": (src_port_num, src_port_mask),
+                "hdr.udp.dstPort": (dst_port_num, dst_port_mask)
+            },
+            action_name="MyIngress.mark_as_suspicious",
+            action_params={},
+            priority=1)
+        sw.WriteTableEntry(table_entry)
+        print "Installed malicious UDP rule on %s" % sw.name
+
+    def writeIDPSTCPTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask, src_port_num, src_port_mask, dst_port_num, dst_port_mask):
+        """
+        Install table entry on the switch.
+
+        :param p4info_helper: the P4Info helper
+        :param sw: the switch connection
+        :param dst_ip_addr: the destination Ethernet address to write in the
+                            egress rule
+        :param dst_eth_addr: the destination IP to match in the ingress rule
+        :param egress_port: the egress port
+        """
+        table_entry = self.p4info_helper.buildTableEntry(
+            table_name="MyIngress.idps_tcp_ternary",
+            match_fields={
+                "hdr.ipv4.srcAddr": (src_ip_addr,src_ip_mask),
+                "hdr.ipv4.dstAddr": (dst_ip_addr,dst_ip_mask),
+                "hdr.tcp.srcPort": (src_port_num, src_port_mask),
+                "hdr.tcp.dstPort": (dst_port_num, dst_port_mask)
+            },
+            action_name="MyIngress.mark_as_suspicious",
+            action_params={},
+            priority=1)
+        sw.WriteTableEntry(table_entry)
+        print "Installed malicious TCP rule on %s" % sw.name
 
     def writeIPV4LPMTableRule(self, sw, dst_ip_addr, dst_eth_addr, egress_port):
         """
@@ -183,7 +233,6 @@ class IDPSServerController():
         self.writeIPV4LPMTableRule(self.s3, "10.0.2.2", "00:00:00:00:02:02", 3)
         self.writeIPV4LPMTableRule(self.s3, "10.0.3.3", "00:00:00:00:03:03", 1)
 
-
     def printGrpcError(e):
         print "gRPC Error:", e.details(),
         status_code = e.code()
@@ -219,19 +268,46 @@ class IDPSServerController():
         self.disconnect()
         return response
 
-    def writeMaliciousRule(self,src_range,dst_range):
+    def writeMaliciousRule(self,proto,src_ip_range,dst_ip_range,src_port_range,dst_port_range):
+
+        src_ip_addr, src_ip_mask = convert_bin_to_value_mask(src_ip_range)
+        dst_ip_addr, dst_ip_mask = convert_bin_to_value_mask(dst_ip_range)
+        src_port_num, src_port_mask = convert_bin_to_value_mask(src_port_range)
+        dst_port_num, dst_port_mask = convert_bin_to_value_mask(dst_port_range)
+
         response = False
         try:
             self.connect()
+            response = True
+            if proto == 1:
+                self.writeIDPSICMPTernaryTableRule(self.s1, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask)
+                self.writeIDPSICMPTernaryTableRule(self.s2, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask)
+                self.writeIDPSICMPTernaryTableRule(self.s3, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask)
+            elif proto == 6:
+                self.writeIDPSTCPTernaryTableRule(self.s1, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
+                                                  src_port_num, src_port_mask, dst_port_num, dst_port_mask)
+                self.writeIDPSTCPTernaryTableRule(self.s2, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
+                                                  src_port_num, src_port_mask, dst_port_num, dst_port_mask)
+                self.writeIDPSTCPTernaryTableRule(self.s3, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
+                                                  src_port_num, src_port_mask, dst_port_num, dst_port_mask)
+            elif proto == 17:
+                self.writeIDPSUDPTernaryTableRule(self.s1, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
+                                                  src_port_num, src_port_mask, dst_port_num, dst_port_mask)
+                self.writeIDPSUDPTernaryTableRule(self.s2, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
+                                                  src_port_num, src_port_mask, dst_port_num, dst_port_mask)
+                self.writeIDPSUDPTernaryTableRule(self.s3, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
+                                                  src_port_num, src_port_mask, dst_port_num, dst_port_mask)
+            else:
+                response = False
             #self.writeIDPSTernaryTableRule(s1, src_value, src_mask, dst_value, dst_mask)
             #self.writeIDPSTernaryTableRule(s2, src_value, src_mask, dst_value, dst_mask)
             #self.writeIDPSTernaryTableRule(s3, src_value, src_mask, dst_value, dst_mask)
-            self.writeIDPSTernaryTableRule(self.s1, 0b00001010000000000000000100000001,0b11111111111111111111111111111111,0b11000000101010000000000000000001,0b11111111111111111111111111111111)
-            self.writeIDPSTernaryTableRule(self.s2, 0b00001010000000000000000100000001,0b11111111111111111111111111111111,0b11000000101010000000000000000001,0b11111111111111111111111111111111)
-            self.writeIDPSTernaryTableRule(self.s3, 0b00001010000000000000000100000001,0b11111111111111111111111111111111,0b11000000101010000000000000000001,0b11111111111111111111111111111111)
-            response = True
+            #self.writeIDPSTernaryTableRule(self.s1, 0b00001010000000000000000100000001,0b11111111111111111111111111111111,0b11000000101010000000000000000001,0b11111111111111111111111111111111)
+            #self.writeIDPSTernaryTableRule(self.s2, 0b00001010000000000000000100000001,0b11111111111111111111111111111111,0b11000000101010000000000000000001,0b11111111111111111111111111111111)
+            #self.writeIDPSTernaryTableRule(self.s3, 0b00001010000000000000000100000001,0b11111111111111111111111111111111,0b11000000101010000000000000000001,0b11111111111111111111111111111111)
+
         except KeyboardInterrupt:
-            print " Shutting down."
+            print " Shutting down..."
         except grpc.RpcError as e:
             printGrpcError(e)
         self.disconnect()

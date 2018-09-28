@@ -54,11 +54,11 @@ class IDPSClientController():
     def getDownServers(self):
         return self.down_servers
 
-    def writeMaliciousRulePerControllerServer(self,server_name,src_range,dst_range):
+    def writeMaliciousRulePerControllerServer(self,server_name,proto, src_ip_range,dst_ip_range,src_port_range,dst_port_range):
         # Get remote data from server
         if self.conn[server_name] is not None:
             try:
-                response = self.conn[server_name].write_malicious_rule(src_range,dst_range)
+                response = self.conn[server_name].write_malicious_rule(proto,src_ip_range,dst_ip_range,src_port_range,dst_port_range)
                 print response
             except (xmlrpclib.Fault, xmlrpclib.ProtocolError, xmlrpclib.ResponseError) as err:
                 print("A fault occurred")
@@ -92,9 +92,9 @@ class IDPSClientController():
         for server_name in self.up_servers:
             self.readSwitchesCountersPerControllerServer(server_name)
 
-    def writeMaliciousRule(self,src_range,dst_range):
+    def writeMaliciousRule(self,proto,src_ip_range,dst_ip_range,src_port_range = None,dst_port_range = None):
         for server_name in self.up_servers:
-            self.writeMaliciousRulePerControllerServer(server_name,src_range,dst_range)
+            self.writeMaliciousRulePerControllerServer(server_name,proto, src_ip_range,dst_ip_range,src_port_range,dst_port_range)
 
     def startClientController(self):
         if self.firstTime:
