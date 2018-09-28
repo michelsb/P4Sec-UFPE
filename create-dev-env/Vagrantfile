@@ -14,6 +14,7 @@ Vagrant.configure("2") do |config|
     vb.cpus = 2
   end
 
+  config.vm.synced_folder '../idps/', '/srv/idps'  
   config.vm.synced_folder '.', '/vagrant', disabled: true  
   config.vm.hostname = "p4sec-vm"
   config.vm.provision "file", source: "p4.vim", destination: "/home/vagrant/p4.vim"
