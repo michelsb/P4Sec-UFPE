@@ -1,5 +1,8 @@
+#!/usr/bin/env python2
+
 import pandas as pd
 import datetime
+import time
 
 import os, sys
 parentPath = os.path.abspath("..")
@@ -58,9 +61,14 @@ print(df)
 print("Number of Original Flows: " + str(num_flows))
 print("Number of Flows with Wildcards: " + str(len(df.index)))
 
+print("# " + str(datetime.datetime.now()) + " - Connecting to controller servers...")
+
 idps_client = IDPSClientController()
-idps_client.startClientController()
+idps_client.startClientController("server.txt")
+
+print("# " + str(datetime.datetime.now()) + " - Start to create malicious rules...")
 
 for index, row in df.iterrows():
-    idps_client.writeMaliciousRule(row["l4Proto"],row["srcIP"],row["dstIP"],row["srcPort"],row["dstPort"])
+    #print("Add - " + str(row["l4Proto"]))
+    idps_client.writeMaliciousRule(str(row["l4Proto"]),row["srcIP"],row["dstIP"],row["srcPort"],row["dstPort"])
         #writeMaliciousRule(self, proto, src_ip_range, dst_ip_range, src_port_range=None, dst_port_range=None)

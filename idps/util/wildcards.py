@@ -145,4 +145,4 @@ def generate_flows_with_wildcards(df):
 def convert_bin_to_value_mask(bin_value):
     value = bin_value.replace('*','0')
     mask = bin_value.replace('0','1').replace('*','0')
-    return bin(int(value,2)),bin(int(mask,2))
+    return int(value,2),int(mask,2)

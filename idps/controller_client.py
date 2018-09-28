@@ -33,8 +33,8 @@ class IDPSClientController():
             self.addDownServer(server_name)
         return False
 
-    def connectServers(self):
-        ref_file = open("server.txt", "r")
+    def connectServers(self,file_name):
+        ref_file = open(file_name, "r")
         servers = []
         for line in ref_file:
             server_name = line.split()[0]
@@ -96,8 +96,8 @@ class IDPSClientController():
         for server_name in self.up_servers:
             self.writeMaliciousRulePerControllerServer(server_name,proto, src_ip_range,dst_ip_range,src_port_range,dst_port_range)
 
-    def startClientController(self):
+    def startClientController(self,file_name):
         if self.firstTime:
-            self.connectServers()
+            self.connectServers(file_name)
             self.firstTime = False
             threading.Timer(5, self.tryConnectDownServers).start()

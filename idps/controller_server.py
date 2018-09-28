@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+
 import argparse
 import grpc
 import os
@@ -8,6 +9,7 @@ from time import sleep
 
 from util.wildcards import convert_bin_to_value_mask
 import p4runtime_lib.bmv2
+#from p4runtime_lib.error_utils import printGrpcError
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
 
@@ -64,16 +66,7 @@ class IDPSServerController():
         ShutdownAllSwitchConnections()
 
     def writeIDPSICMPTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask):
-        """
-        Install table entry on the switch.
 
-        :param p4info_helper: the P4Info helper
-        :param sw: the switch connection
-        :param dst_ip_addr: the destination Ethernet address to write in the
-                            egress rule
-        :param dst_eth_addr: the destination IP to match in the ingress rule
-        :param egress_port: the egress port
-        """
         table_entry = self.p4info_helper.buildTableEntry(
             table_name="MyIngress.idps_icmp_ternary",
             match_fields={
@@ -87,16 +80,7 @@ class IDPSServerController():
         print "Installed malicious ICMP rule on %s" % sw.name
 
     def writeIDPSUDPTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask, src_port_num, src_port_mask, dst_port_num, dst_port_mask):
-        """
-        Install table entry on the switch.
 
-        :param p4info_helper: the P4Info helper
-        :param sw: the switch connection
-        :param dst_ip_addr: the destination Ethernet address to write in the
-                            egress rule
-        :param dst_eth_addr: the destination IP to match in the ingress rule
-        :param egress_port: the egress port
-        """
         table_entry = self.p4info_helper.buildTableEntry(
             table_name="MyIngress.idps_udp_ternary",
             match_fields={
@@ -112,16 +96,7 @@ class IDPSServerController():
         print "Installed malicious UDP rule on %s" % sw.name
 
     def writeIDPSTCPTernaryTableRule(self, sw, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask, src_port_num, src_port_mask, dst_port_num, dst_port_mask):
-        """
-        Install table entry on the switch.
 
-        :param p4info_helper: the P4Info helper
-        :param sw: the switch connection
-        :param dst_ip_addr: the destination Ethernet address to write in the
-                            egress rule
-        :param dst_eth_addr: the destination IP to match in the ingress rule
-        :param egress_port: the egress port
-        """
         table_entry = self.p4info_helper.buildTableEntry(
             table_name="MyIngress.idps_tcp_ternary",
             match_fields={
@@ -177,7 +152,7 @@ class IDPSServerController():
                 print '%s: ' % table_name,
                 for m in entry.match:
                     print self.p4info_helper.get_match_field_name(table_name, m.field_id),
-                    print '%r' % (p4info_helper.get_match_field_value(m),),
+                    print '%r' % (self.p4info_helper.get_match_field_value(m),),
                 action = entry.action.action
                 action_name = self.p4info_helper.get_actions_name(action.action_id)
                 print '->', action_name,
@@ -215,7 +190,7 @@ class IDPSServerController():
         except KeyboardInterrupt:
          print " Shutting down."
         except grpc.RpcError as e:
-         printGrpcError(e)
+         self.printGrpcError(e)
 
     def createdForwardingRulesOnSwitches(self):
         # Write the forwarding rules for s1
@@ -248,7 +223,7 @@ class IDPSServerController():
         except KeyboardInterrupt:
             print " Shutting down."
         except grpc.RpcError as e:
-            printGrpcError(e)
+            self.printGrpcError(e)
         self.disconnect()
 
     def readSwitchesCounters(self):
@@ -264,7 +239,7 @@ class IDPSServerController():
         except KeyboardInterrupt:
             print " Shutting down."
         except grpc.RpcError as e:
-            printGrpcError(e)
+            self.printGrpcError(e)
         self.disconnect()
         return response
 
@@ -279,18 +254,18 @@ class IDPSServerController():
         try:
             self.connect()
             response = True
-            if proto == 1:
+            if proto == "1":
                 self.writeIDPSICMPTernaryTableRule(self.s1, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask)
                 self.writeIDPSICMPTernaryTableRule(self.s2, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask)
                 self.writeIDPSICMPTernaryTableRule(self.s3, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask)
-            elif proto == 6:
+            elif proto == "6":
                 self.writeIDPSTCPTernaryTableRule(self.s1, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
                                                   src_port_num, src_port_mask, dst_port_num, dst_port_mask)
                 self.writeIDPSTCPTernaryTableRule(self.s2, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
                                                   src_port_num, src_port_mask, dst_port_num, dst_port_mask)
                 self.writeIDPSTCPTernaryTableRule(self.s3, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
                                                   src_port_num, src_port_mask, dst_port_num, dst_port_mask)
-            elif proto == 17:
+            elif proto == "17":
                 self.writeIDPSUDPTernaryTableRule(self.s1, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
                                                   src_port_num, src_port_mask, dst_port_num, dst_port_mask)
                 self.writeIDPSUDPTernaryTableRule(self.s2, src_ip_addr, src_ip_mask, dst_ip_addr, dst_ip_mask,
@@ -309,7 +284,8 @@ class IDPSServerController():
         except KeyboardInterrupt:
             print " Shutting down..."
         except grpc.RpcError as e:
-            printGrpcError(e)
+            print(type(e))
+            #self.printGrpcError(e)
         self.disconnect()
         return response
 
