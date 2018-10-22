@@ -35,6 +35,15 @@ to install a few rules.
    the necessary rules to enable communication between hosts. Ping should 
    now work properly.
 
+4. Run example:
+   ```bash
+   cd ~/P4Sec-UFPE/idps/example
+   ./idps_example.py
+   ```
+   It works as follows : (1) Read some CSVs, create Pandas dataframe from them; 
+   (2) Apply an algorithm to reduce the amount of flows from the use of wildcards; 
+   and (3) Install the new rules on all switches. 
+   
 ## Other experiments
 
 1. You should now see a Mininet command prompt. Open two terminals
