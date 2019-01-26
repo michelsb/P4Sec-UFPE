@@ -9,15 +9,11 @@ Repository for software generated within the scope of the P4Sec project, at UFPE
 You will need to build a virtual machine. For this, follow the steps below:
 
 - Install [Vagrant](https://vagrantup.com) and [VirtualBox](https://virtualbox.org)
+- `vagrant plugin install vagrant-disksize`
 - `git clone -b develop https://github.com/michelsb/P4Sec-UFPE.git`
 - `cd P4Sec-UFPE/create-dev-env`
 - Create the VM: `vagrant up`
-- Access the VM: `vagrant ssh`
-- Download the repository inside the VM: 
-   ```bash
-   cd ~
-   git clone -b develop https://github.com/michelsb/P4Sec-UFPE.git
-   ```
+- Accessing the VM: `vagrant ssh`
  
 Other auxiliary commands:
 
