@@ -13,12 +13,14 @@ apt-get install -y --no-install-recommends \
   bison \
   build-essential \
   ca-certificates \
+  clang \
   cmake \
   cpp \
   curl \
   emacs24 \
   flex \
   git \
+  iproute2 \
   libboost-dev \
   libboost-filesystem-dev \
   libboost-iostreams1.58-dev \
@@ -27,6 +29,7 @@ apt-get install -y --no-install-recommends \
   libboost-test-dev \
   libboost-thread-dev \
   libc6-dev \
+  libelf-dev \
   libevent-dev \
   libffi-dev \
   libfl-dev \
@@ -43,8 +46,10 @@ apt-get install -y --no-install-recommends \
   libssl-dev \
   libtool \
   linux-headers-$KERNEL\
+  llvm \
   make \
   mktemp \
+  net-tools \
   pkg-config \
   python \
   python-dev \
@@ -58,3 +63,5 @@ apt-get install -y --no-install-recommends \
   wget \
   xcscope-el \
   xterm
+
+sudo pip install psutil pyroute2 ply scapy==2.4.0
