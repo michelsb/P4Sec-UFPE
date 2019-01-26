@@ -5,7 +5,8 @@
 You need first to compile the new P4 program, start the network, and use `controller_server.py` 
 to install a few rules.
 
-1. In your shell, run:
+1. Copy the files from the p4 program to the folder. NOTE: In the folder you already have the sample program `rtp4app.p4`.
+2. In your shell, run:
    ```bash
    cd ~/P4Sec-UFPE/project/virtual-env/
    make
@@ -19,14 +20,14 @@ to install a few rules.
 
 ![topology](topo.png)
 
-2. You should now see a Mininet command prompt. Start a ping between h1 and h2:
+3. You should now see a Mininet command prompt. Start a ping between h1 and h2:
    ```bash
    mininet> h1 ping h2
    ```
    Because there are no rules on the switches, you should **not** receive any
    replies yet. You should leave the ping running in this shell.
 
-3. Open another shell and run the IDPS code:
+4. Open another shell and run the IDPS code:
    ```bash
    cd ~/P4Sec-UFPE/project/virtual-env/
    ./controller_server.py
