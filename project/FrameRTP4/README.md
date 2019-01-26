@@ -2,8 +2,8 @@
 
 ## Building Real Time P4 Application
 
-1. Copy/Paste P4 application to the `rtp4app` directory
-2. In config.ini, identify the real time processing tables. OBS: such tables must have only ternary match fields. 
+1. Copy/Paste all P4 application files to the `rtp4app` directory
+2. Edit the `/rtp4app/config.ini`, indicating the real time processing tables. OBS: such tables must have only ternary match fields. 
 3. In your shell, run:
    ```bash
    cd ~/P4Sec-UFPE/project/FrameRTP4/
